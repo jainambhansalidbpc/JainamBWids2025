@@ -9,19 +9,26 @@ import joblib
 
 # 1. Load Data
 try:
-    # UPDATED: Matches your actual filename from the previous check
+    # Ensure this matches your actual filename
     df = pd.read_csv('first_order_df.csv') 
 except FileNotFoundError:
-    print("Error: first_order_df.csv not found. Please download it.")
-    exit()
+    try:
+        df = pd.read_csv('transaction_dataset.csv')
+    except:
+        print("Error: Dataset not found. Please download it.")
+        exit()
 
-# 2. Select Specific Features
-# We explicitly select only the columns we know exist
+# 2. Select Features (The Fix)
+# We strictly select ONLY the columns we know exist in your file
 features_to_use = ['Value', 'BlockHeight', 'TimeStamp']
 target_column = 'isError'
 
-X = df[features_to_use] # <--- This is the safe way
-y = df[target_column]
+try:
+    X = df[features_to_use]
+    y = df[target_column]
+except KeyError as e:
+    print(f"Error: Missing column {e} in your CSV. Check your file.")
+    exit()
 
 # 3. Preprocessing
 imputer = SimpleImputer(strategy='mean')
@@ -37,11 +44,12 @@ print("Training Model...")
 model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
+# 5. Evaluate
 predictions = model.predict(X_test)
 print("Model Accuracy Report:")
 print(classification_report(y_test, predictions))
 
-# 5. Save
+# 6. Save
 joblib.dump(model, 'fraud_model.pkl')
 joblib.dump(scaler, 'scaler.pkl')
 joblib.dump(imputer, 'imputer.pkl')
